@@ -29,3 +29,15 @@ graph LR
     E --> F{Integration Tests}
     F -->|Success| G[Deploy to Production]
 ```
+
+## Быстрый старт
+
+Для локального запуска всех сервисов и баз данных требуется установленный Docker и Docker Compose.
+
+1. Клонируйте репозиторий:
+    ```bash
+    git clone https://github.com/ProvotorovMaksim/pet-project-mono-repo.git
+    cd pet-project-mono-repo
+    cp .env.example .env
+    docker compose up
+
