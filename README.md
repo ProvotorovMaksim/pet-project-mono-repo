@@ -1,5 +1,5 @@
 # pet-project-mono-repo
-```memraid
+```mermaid
 graph TD
     Client[Клиент / Пользователь] -->|HTTPS| RP[Reverse Proxy]
     RP --> Auth[Auth Service]
@@ -18,8 +18,9 @@ graph TD
         MQ
         Notif
     end
+```
 
-```memraid
+```mermaid
 graph LR
     A[Git Push] --> B{Lint & Unit Tests}
     B -->|Success| C[Build Docker Images]
@@ -27,4 +28,4 @@ graph LR
     D --> E[Deploy to Staging]
     E --> F{Integration Tests}
     F -->|Success| G[Deploy to Production]
-    end
+```
