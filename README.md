@@ -38,6 +38,12 @@ graph LR
     ```bash
     git clone https://github.com/ProvotorovMaksim/pet-project-mono-repo.git
     cd pet-project-mono-repo
+
+2. Создайте переменные окружения:
+    ```bash
     cp .env.example .env
+
+3. Запустите проект:
+    ```bash
     docker compose up
 
