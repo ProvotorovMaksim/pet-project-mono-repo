@@ -1,0 +1,15 @@
+include:
+  - services/API-Gateway-service/compose.yml
+  - services/E-commerce-vpn/compose.yml
+  - services/Registration-backend-service/compose.yml
+  - services/notification-service/compose.yml
+
+networks:
+  saas_network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  vpn_db_data:
+  registry_db_data:
