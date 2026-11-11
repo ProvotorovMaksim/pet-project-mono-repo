@@ -1,139 +1,57 @@
-# Pet Project Monorepo
+# Pet Project Monorepo — стенд VPN-сервисов
 
-Микросервисный SaaS-проект для управления доступом, пользователями, уведомлениями и маршрутизацией запросов между сервисами. Репозиторий демонстрирует практику построения распределённой архитектуры, контейнеризации, безопасности и организации инфраструктуры для локального и демонстрационного запуска.
+## Назначение проекта
+
+Собирает точку входа, авторизацию, кабинет VPN и уведомления для локальной демонстрации межсервисных интеграций.
+
+## Функциональность
+
+Корневой Compose включает четыре приложения. В закреплённых версиях реализованы маршрутизация шлюза, JWT-авторизация, операции личного кабинета и HTTP-уведомления. Prometheus и Grafana включены в конфигурацию шлюза.
 
 ## Архитектура
 
-```mermaid
-graph TD
-    Client[Пользователь / Frontend] -->|HTTPS| Gateway[API Gateway]
-    Gateway --> Auth[Registration Auth Service]
-    Gateway --> VPN[E-commerce VPN Service]
-    Gateway --> Notify[Notification Service]
+`docker-compose.yml` подключает файлы из `services/`. Шлюз проксирует HTTP, auth и VPN используют отдельные PostgreSQL. VPN обращается к auth, биллингу и VPN-провайдеру по HTTP. Уведомления используют Telegram и содержат модуль Kafka-consumer. Биллинг, VPN-провайдер и Kafka требуют отдельной инфраструктуры.
 
-    Auth --> DBAuth[(PostgreSQL)]
-    VPN --> DBVPN[(PostgreSQL)]
+### С чего начать чтение кода
 
-    Gateway --> Grafana[Grafana]
-    Gateway --> Prometheus[Prometheus]
+- [`docker-compose.yml`](docker-compose.yml)
+- [`services/API-Gateway-service/main.py`](services/API-Gateway-service/main.py)
+- [`services/E-commerce-vpn/routers/api.py`](services/E-commerce-vpn/routers/api.py)
 
-    Auth --> Kafka[Kafka]
-    Kafka --> Notify
-```
+[Граф связей Graphify](graphify-out/graph.html) · [Отчёт Graphify](graphify-out/GRAPH_REPORT.md)
 
-## Что входит в проект
-
-- API Gateway — единая точка входа, JWT-проверка, проксирование запросов, мониторинг и Grafana
-- Registration Backend — регистрация, авторизация, JWT, пользовательский профиль
-- E-commerce VPN — бизнес-логика VPN сервиса, управление устройствами, профилем клиента, оплатами и тарифами
-- Notification Service — отправка уведомлений в Telegram и интеграция с событиями
-- Prometheus + Grafana — сбор метрик и визуализация состояния системы
-- Docker Compose — единая локальная среда запуска всего монорепозитория
+Для поиска по графу из корня репозитория выполните `graphify god-nodes --top 5` или `graphify query "имя функции или модуля"`.
 
 ## Технологический стек
 
-- Python 3.11+
-- FastAPI
-- SQLAlchemy + Async SQLAlchemy
-- PostgreSQL
-- JWT / OAuth-like access-token flow
-- Kafka producer/consumer patterns
-- Docker / Docker Compose
-- Prometheus + Grafana
-- HTTPX, Pydantic, Alembic
+Python, FastAPI, HTTPX, PostgreSQL, SQLAlchemy, asyncpg, Alembic, JWT, Kafka-клиенты, Prometheus, Grafana, Docker Compose.
 
-## Структура репозитория
+## Технические решения
 
-```text
-pet-project-mono-repo/
-├── docker-compose.yml
-├── .env.example
-├── README.md
-├── infra/
-├── services/
-│   ├── API-Gateway-service/
-│   ├── E-commerce-vpn/
-│   ├── Registration-backend-service/
-│   └── notification-service/
-└── shared/
-```
+Сервисы используют общую сеть и отдельные хранилища. Alembic применяется при старте auth и VPN. Обзор и граф опираются на закреплённые коммиты вложенных проектов.
 
-## Быстрый старт
+## Запуск проекта
 
-### 1. Клонирование
+Требуется Docker Compose с поддержкой include. В рабочей копии нужны все четыре папки `services/` с исходниками. Git хранит их как ссылки на вложенные репозитории, но `.gitmodules` отсутствует. TODO — восстановить отображение вложенных репозиториев, устранить конфликт хост-порта 8000 и проверить чистый клон. Настройте значения по именам из `.env.example`, включая `JWT_SECRET_KEY`, `SERVICES_URLS`, `VPN_DATABASE_URL`, `REGISTRY_DATABASE_URL`, `POSTGRES_*` и настройки внешних сервисов. Сначала выполните `docker compose config --quiet`, затем `docker compose up --build` после устранения ошибок конфигурации.
+
+## Примеры API
+
+Шлюз предоставляет `GET /health` и прокси `/api/{path}`. Во вложенных сервисах есть `POST /register`, `POST /login`, `GET /me` и `GET /api/tariffs`. Пример обращается к шлюзу.
 
 ```bash
-git clone https://github.com/your-username/pet-project-mono-repo.git
-cd pet-project-mono-repo
+curl -i http://localhost:8000/health
 ```
 
-### 2. Настройка окружения
+## Тестирование
 
-```bash
-cp .env.example .env
-```
+В локальной рабочей копии auth есть TestClient-тесты в `services/Registration-backend-service/tests.py`. Запуск из каталога auth — `python -m pytest tests.py` с тестовыми PostgreSQL и Kafka. Корневой сквозной набор отсутствует.
 
-### 3. Запуск всех сервисов
+## Ограничения и дальнейшее развитие
 
-```bash
-docker compose up --build
-```
+Нужно восстановить воспроизводимое получение исходников, проверить итоговый Compose и зафиксировать контракты для внешних зависимостей.
 
-## Основные точки входа
+## Мой вклад
 
-- API Gateway: http://localhost:8000
-- Grafana: http://localhost:3000
-- Prometheus: http://localhost:9090
-- Registration service: internal Docker network endpoint
-- VPN service: internal Docker network endpoint
-- Notification service: internal Docker network endpoint
+TODO — описать свою роль, реализованные компоненты и принятые технические решения.
 
-## Принципы архитектуры
-
-### Разделение ответственности
-
-Каждый сервис отвечает только за свою область:
-- Gateway — маршрутизация и безопасность
-- Auth — идентификация и токены
-- VPN — доменная логика SaaS-процесса
-- Notification — события и оповещения
-
-### Контейнеризация
-
-Вся система запускается через `docker compose`, что упрощает локальную разработку, тестирование и демонстрацию проекта.
-
-### Наблюдаемость
-
-Система включает:
-- Prometheus для сбора метрик
-- Grafana для dashboards
-- health-check endpoints
-
-## Риски и улучшения для production
-
-В текущем пет-проекте уже есть базовая архитектурная основа, но для продакшена стоит дополнительно реализовать:
-
-- полноценный API gateway с rate limiting и circuit breaker
-- ролевую модель доступа и policy-based security
-- миграции и версионирование схемы данных
-- CI/CD pipeline
-- structured logging и централизованный сбор логов
-- секреты через Docker Swarm, Kubernetes или managed secrets
-
-## Роль проекта в портфолио
-
-Этот репозиторий демонстрирует:
-- понимание микросервисной архитектуры
-- контейнеризацию и orchestration
-- работу с внутренней сетью сервисов
-- реализацию auth/identity flow
-- мониторинг и observability
-- подход к проектированию production-friendly software systems
-
-## Сервисы проекта
-
-- [services/API-Gateway-service/README.md](services/API-Gateway-service/README.md)
-- [services/E-commerce-vpn/README.md](services/E-commerce-vpn/README.md)
-- [services/Registration-backend-service/README.md](services/Registration-backend-service/README.md)
-- [services/notification-service/README.md](services/notification-service/README.md)
-
+[Технический обзор проекта](PROJECT_REVIEW.md)
